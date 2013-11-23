@@ -27,7 +27,7 @@ public class BitmapUtilsInstrumentationTest extends InstrumentationTestCase {
         assertEquals(scaledBitmapSize, bm.getWidth());
     }
 
-    public void test_bitmaputil_creates_bitmaps__of_a_specified_size() {
+    public void test_bitmaputil_creates_bitmaps_of_a_specified_size() {
         Bitmap bm = new BitmapUtil().decodeResourceBitmapAndScale(getInstrumentation().getContext(),
                 scaledBitmapSize, scaledBitmapSize, R.drawable.icon, allowUpSampling);
 

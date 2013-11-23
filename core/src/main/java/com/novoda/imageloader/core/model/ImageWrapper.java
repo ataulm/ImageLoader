@@ -18,6 +18,7 @@ package com.novoda.imageloader.core.model;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.text.TextUtils;
 import android.view.animation.Animation;
 import android.widget.ImageView;
 
@@ -147,6 +148,14 @@ public class ImageWrapper {
 
     public void setSaveThumbnail(boolean saveThumbnail) {
         this.saveThumbnail = saveThumbnail;
+    }
+
+    public boolean hasPreviewUrl() {
+        return TextUtils.isEmpty(previewUrl);
+    }
+
+    public boolean hasNoPreviewUrl() {
+        return !hasPreviewUrl();
     }
 
     public String getPreviewUrl() {

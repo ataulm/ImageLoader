@@ -16,14 +16,15 @@
 package com.novoda.imageloader.core.loader;
 
 import android.graphics.Bitmap;
+import android.util.Log;
 import android.widget.ImageView;
 
 import com.novoda.imageloader.core.LoaderSettings;
 import com.novoda.imageloader.core.OnImageLoadedListener;
-import com.novoda.imageloader.core.exception.ImageNotFoundException;
 import com.novoda.imageloader.core.loader.util.BitmapDisplayer;
 import com.novoda.imageloader.core.loader.util.BitmapRetriever;
 import com.novoda.imageloader.core.loader.util.SingleThreadedLoader;
+import com.novoda.imageloader.core.model.ImageTag;
 import com.novoda.imageloader.core.model.ImageWrapper;
 
 import java.io.File;
@@ -37,7 +38,7 @@ public class SimpleLoader implements Loader {
 
     public SimpleLoader(LoaderSettings loaderSettings) {
         this.loaderSettings = loaderSettings;
-        this.singleThreadedLoader = new SingleThreadedLoader() {
+        singleThreadedLoader = new SingleThreadedLoader() {
             @Override
             protected Bitmap loadMissingBitmap(ImageWrapper iw) {
                 return getBitmap(iw.getUrl(), iw.getWidth(), iw.getHeight(), iw.getImageView());
@@ -52,42 +53,22 @@ public class SimpleLoader implements Loader {
         };
     }
 
-    private void onImageLoaded(ImageView imageView) {
-        if (onImageLoadedListener != null) {
-            onImageLoadedListener.get().onImageLoaded(imageView);
+    private Bitmap getResourceAsBitmap(ImageWrapper imageWrapper, int resId) {
+        Bitmap bitmap = loaderSettings.getResCacheManager().get(String.valueOf(resId), imageWrapper.getWidth(), imageWrapper.getHeight());
+        if (weCanUseThis(bitmap)) {
+            return bitmap;
         }
+        bitmap = loaderSettings.getBitmapUtil().decodeResourceBitmapAndScale(imageWrapper, resId, loaderSettings.isAllowUpsampling());
+        loaderSettings.getResCacheManager().put(String.valueOf(resId), bitmap);
+        return bitmap;
     }
 
-    @Override
-    public void load(ImageView imageView) {
-        ImageWrapper w = new ImageWrapper(imageView);
+    private Bitmap getBitmapFromMemoryCache(ImageWrapper imageWrapper) {
+        return loaderSettings.getCacheManager().get(imageWrapper.getUrl(), imageWrapper.getHeight(), imageWrapper.getWidth());
+    }
 
-        try {
-            Bitmap b = loaderSettings.getCacheManager().get(w.getUrl(), w.getWidth(), w.getHeight());
-            if (b != null && !b.isRecycled()) {
-                w.setBitmap(b, false);
-                return;
-            }
-            String thumbUrl = w.getPreviewUrl();
-            if (thumbUrl != null) {
-                b = loaderSettings.getCacheManager().get(thumbUrl, w.getPreviewHeight(), w.getPreviewWidth());
-                if (b != null && !b.isRecycled()) {
-                    w.setBitmap(b, false);
-                } else {
-                    setResource(w, w.getLoadingResourceId());
-                }
-            } else {
-                setResource(w, w.getLoadingResourceId());
-            }
-            if (w.isUseCacheOnly()) {
-                return;
-            }
-            singleThreadedLoader.push(w);
-        } catch (ImageNotFoundException inf) {
-            setResource(w, w.getNotFoundResourceId());
-        } catch (Throwable t) {
-            setResource(w, w.getNotFoundResourceId());
-        }
+    private Bitmap getPreviewCachedBitmap(ImageWrapper imageWrapper) {
+        return loaderSettings.getCacheManager().get(imageWrapper.getPreviewUrl(), imageWrapper.getPreviewHeight(), imageWrapper.getPreviewWidth());
     }
 
     @Override
@@ -97,23 +78,68 @@ public class SimpleLoader implements Loader {
 
     private Bitmap getBitmap(String url, int width, int height, ImageView imageView) {
         if (url != null && url.length() >= 0) {
-            File f = loaderSettings.getFileManager().getFile(url);
-            BitmapRetriever retriever = new BitmapRetriever(url, f, width, height, 0, false, true, imageView, loaderSettings, null);
-            Bitmap b = retriever.getBitmap();
-            return b;
+            File file = loaderSettings.getFileManager().getFile(url);
+            BitmapRetriever retriever = new BitmapRetriever(url, file, width, height, 0, false, true, imageView, loaderSettings, null);
+            Bitmap bitmap = retriever.getBitmap();
+            return bitmap;
         }
         return null;
     }
 
-    private void setResource(ImageWrapper w, int resId) {
-        Bitmap b = loaderSettings.getResCacheManager().get("" + resId, w.getWidth(), w.getHeight());
-        if (b != null) {
-            w.setBitmap(b, false);
+    @Override
+    public void load(ImageView imageView) {
+        if (weCannotUseThis(imageView)) {
+            Log.w("ImageLoader", "You should never call load if you don't set a ImageTag on the view");
             return;
         }
-        b = loaderSettings.getBitmapUtil().decodeResourceBitmapAndScale(w, resId, loaderSettings.isAllowUpsampling());
-        loaderSettings.getResCacheManager().put("" + resId, b);
-        w.setBitmap(b, false);
+
+        loadBitmap(new ImageWrapper(imageView));
     }
 
+    private void loadBitmap(ImageWrapper imageWrapper) {
+        Bitmap bitmap = getBitmapFromMemoryCache(imageWrapper);
+        if (weCanUseThis(bitmap)) {
+            imageWrapper.setBitmap(bitmap, false);
+            return;
+        }
+
+        loadDefaultImage(imageWrapper);
+
+        if (!imageWrapper.isUseCacheOnly()) {
+            singleThreadedLoader.push(imageWrapper);
+        }
+    }
+
+    private void loadDefaultImage(ImageWrapper imageWrapper) {
+        if (imageWrapper.hasNoPreviewUrl()) {
+            imageWrapper.setResourceBitmap(getResourceAsBitmap(imageWrapper, imageWrapper.getLoadingResourceId()));
+            return;
+        }
+
+        Bitmap bitmap = getPreviewCachedBitmap(imageWrapper);
+        if (weCanUseThis(bitmap)) {
+            imageWrapper.setBitmap(getPreviewCachedBitmap(imageWrapper), false);
+        } else {
+            imageWrapper.setResourceBitmap(getResourceAsBitmap(imageWrapper, imageWrapper.getLoadingResourceId()));
+        }
+    }
+
+    private void onImageLoaded(ImageView imageView) {
+        if (onImageLoadedListener != null) {
+            onImageLoadedListener.get().onImageLoaded(imageView);
+        }
+    }
+
+    private boolean weCanUseThis(Bitmap bitmap) {
+        return bitmap != null && !bitmap.isRecycled();
+    }
+
+    private boolean weCanUseThis(ImageView imageView) {
+        Object tag = imageView.getTag();
+        return tag != null && tag instanceof ImageTag;
+    }
+
+    private boolean weCannotUseThis(ImageView imageView) {
+        return !weCanUseThis(imageView);
+    }
 }

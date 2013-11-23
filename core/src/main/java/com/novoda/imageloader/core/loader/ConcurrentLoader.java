@@ -23,6 +23,7 @@ import com.novoda.imageloader.core.LoaderSettings;
 import com.novoda.imageloader.core.OnImageLoadedListener;
 import com.novoda.imageloader.core.exception.ImageNotFoundException;
 import com.novoda.imageloader.core.loader.util.LoaderTask;
+import com.novoda.imageloader.core.model.ImageTag;
 import com.novoda.imageloader.core.model.ImageWrapper;
 
 import java.lang.ref.WeakReference;
@@ -46,18 +47,23 @@ public class ConcurrentLoader implements Loader {
     }
 
     private boolean isValidImageView(ImageView imageView) {
-        return imageView.getTag() != null;
+        Object tag = imageView.getTag();
+        return tag != null && tag instanceof ImageTag;
     }
 
-    private synchronized void loadBitmap(ImageWrapper w) {
-        if (isBitmapAlreadyInCache(getCachedBitmap(w))) {
-            Bitmap cachedBitmap = getCachedBitmap(w);
-            w.setBitmap(cachedBitmap, false);
+    private synchronized void loadBitmap(ImageWrapper imageWrapper) {
+        Bitmap bitmap = getCachedBitmap(imageWrapper);
+
+        if (isBitmapAlreadyInCache(bitmap)) {
+            imageWrapper.setBitmap(bitmap, false);
+            // todo: call onImageLoaded?
             return;
         }
-        setDefaultImage(w);
-        if (!w.isUseCacheOnly()) {
-            startTask(w);
+
+        setDefaultImage(imageWrapper);
+
+        if (!imageWrapper.isUseCacheOnly()) {
+            startTask(imageWrapper);
         }
     }
 

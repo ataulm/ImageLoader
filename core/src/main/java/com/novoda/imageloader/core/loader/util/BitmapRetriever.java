@@ -75,8 +75,7 @@ public class BitmapRetriever {
     private void onDecodeFailed() {
         try {
             imageFile.delete();
-        } catch (SecurityException e) {
-            //
+        } catch (SecurityException ignore) {
         }
     }
 

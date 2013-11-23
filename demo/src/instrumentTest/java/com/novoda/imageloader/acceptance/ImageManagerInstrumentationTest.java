@@ -1,11 +1,9 @@
 package com.novoda.imageloader.acceptance;
 
 import android.test.InstrumentationTestCase;
-import android.widget.ImageView;
 
 import com.novoda.imageloader.core.ImageManager;
 import com.novoda.imageloader.core.LoaderSettings;
-import com.novoda.imageloader.core.OnImageLoadedListener;
 import com.novoda.imageloader.core.file.util.FileUtil;
 import com.novoda.imageloader.core.network.NetworkManager;
 
@@ -34,26 +32,6 @@ public class ImageManagerInstrumentationTest extends InstrumentationTestCase {
 
         assertNotNull("image should be in cache!", imageManager.getCacheManager().get(IMAGE_URL, WIDTH, HEIGHT));
     }
-
-    public void testWhenImageIsSuccessfullyCached_onImageLoadedEventIsFired() throws IOException {
-        ImageManager imageManager = createImageManagerBackedByCustomNetworkManager();
-        ImageLoadedListener listener = new ImageLoadedListener();
-        imageManager.setOnImageLoadedListener(listener);
-
-        imageManager.cacheImage(IMAGE_URL, WIDTH, HEIGHT);
-
-        assertTrue(listener.timesFired == 1);
-    }
-
-    private class ImageLoadedListener implements OnImageLoadedListener {
-        int timesFired;
-
-        @Override
-        public void onImageLoaded(ImageView imageView) {
-            timesFired++;
-        }
-    }
-
 
     private ImageManager createImageManagerBackedByCustomNetworkManager() {
         LoaderSettings settings = new LoaderSettings.SettingsBuilder()

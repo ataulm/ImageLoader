@@ -40,15 +40,15 @@ public class SimpleLoader implements Loader {
         this.loaderSettings = loaderSettings;
         singleThreadedLoader = new SingleThreadedLoader() {
             @Override
-            protected Bitmap loadMissingBitmap(ImageWrapper iw) {
-                return getBitmap(iw.getUrl(), iw.getWidth(), iw.getHeight(), iw.getImageView());
+            protected Bitmap loadMissingBitmap(ImageWrapper imageWrapper) {
+                return getBitmap(imageWrapper.getUrl(), imageWrapper.getWidth(), imageWrapper.getHeight(), imageWrapper.getImageView());
             }
 
             @Override
-            protected void onBitmapLoaded(ImageWrapper iw, Bitmap bmp) {
-                new BitmapDisplayer(bmp, iw).runOnUiThread();
-                SimpleLoader.this.loaderSettings.getCacheManager().put(iw.getUrl(), bmp);
-                onImageLoaded(iw.getImageView());
+            protected void onBitmapLoaded(ImageWrapper imageWrapper, Bitmap bitmap) {
+                new BitmapDisplayer(bitmap, imageWrapper).runOnUiThread();
+                SimpleLoader.this.loaderSettings.getCacheManager().put(imageWrapper.getUrl(), bitmap);
+                onImageLoaded(imageWrapper.getImageView());
             }
         };
     }
@@ -100,6 +100,7 @@ public class SimpleLoader implements Loader {
         Bitmap bitmap = getBitmapFromMemoryCache(imageWrapper);
         if (weCanUseThis(bitmap)) {
             imageWrapper.setBitmap(bitmap, false);
+            // todo: call onImageLoaded?
             return;
         }
 

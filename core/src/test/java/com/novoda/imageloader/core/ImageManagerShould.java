@@ -35,7 +35,7 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.Mockito.*;
 
-public class ImageManagerTest {
+public class ImageManagerShould {
     private LoaderSettings loaderSettings;
     private Context context;
     private ImageManager imageManager;
@@ -49,21 +49,21 @@ public class ImageManagerTest {
     }
 
     @Test(expected = RuntimeException.class)
-    public void shouldComplainIfInternetPermissionIsNotSet() {
+    public void complainIfInternetPermissionIsNotSet() {
         disableManifestPermission(Manifest.permission.INTERNET);
 
         new ImageManager(context, loaderSettings);
     }
 
     @Test(expected = RuntimeException.class)
-    public void shouldComplainIfWriteExternalStoragePermissionIsNotSet() {
+    public void complainIfWriteExternalStoragePermissionIsNotSet() {
         disableManifestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
         new ImageManager(context, loaderSettings);
     }
 
     @Test
-    public void shouldRegisterOnImageLoadedListener() {
+    public void registerOnImageLoadedListener() {
         OnImageLoadedListener listener = mock(OnImageLoadedListener.class);
         imageManager = new ImageManager(loaderSettings);
         imageManager.setOnImageLoadedListener(listener);
@@ -75,7 +75,7 @@ public class ImageManagerTest {
     }
 
     @Test
-    public void shouldUnregisterOnImageLoadedListener() {
+    public void deregisterOnImageLoadedListener() {
         setUpImageManager();
         OnImageLoadedListener listener = mock(OnImageLoadedListener.class);
         imageManager.setOnImageLoadedListener(listener);

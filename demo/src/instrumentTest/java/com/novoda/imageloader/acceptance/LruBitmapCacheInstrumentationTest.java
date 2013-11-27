@@ -26,13 +26,13 @@ public class LruBitmapCacheInstrumentationTest extends InstrumentationTestCase {
     public void testPutValue() {
         Bitmap bitmap = createBitmap();
         cache.put(KEY, bitmap);
-        assertEquals(bitmap, cache.get(KEY, bitmap.getWidth(), bitmap.getHeight()));
+        assertEquals(bitmap, cache.get(KEY));
     }
 
     public void testRemoveValue() {
         cache.put(KEY, createBitmap());
         cache.remove(KEY);
-        assertNull(cache.get(KEY, 100, 100));
+        assertNull(cache.get(KEY));
     }
 
     private Bitmap createBitmap() {

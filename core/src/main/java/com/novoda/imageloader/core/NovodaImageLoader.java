@@ -124,6 +124,18 @@ public class NovodaImageLoader implements ImageLoader {
 
     /**
      * Runs in the same thread as the calling method; ensure this is not called from the main thread.
+     * Loads an image into the cache, it does not bind the image to any view.
+     * This method can be used for pre-fetching images.
+     * If the image is already cached, the image is not fetched from the net.
+     * <p/>
+     * This method runs in the same thread as the caller method.
+     * Hence, make sure that this method is not called from the main thread.
+     * <p/>
+     * If the image could be retrieved and decoded the resulting bitmap is cached.
+     *
+     * @param url Url of image to be pre-fetched
+     * @width size of the cached image
+     * @height size of the cached image
      */
     @Override
     public void cacheImage(String url, int width, int height) {
@@ -140,8 +152,8 @@ public class NovodaImageLoader implements ImageLoader {
                 } else {
                     b = loaderSettings.getBitmapUtil().decodeFileAndScale(imageFile, width, height, loaderSettings.isAllowUpsampling());
                 }
-                if (b == null) {
-                    // decode failed
+
+                if (b != null) {
                     loaderSettings.getCacheManager().put(url, b);
                 }
             } catch (ImageNotFoundException inf) {

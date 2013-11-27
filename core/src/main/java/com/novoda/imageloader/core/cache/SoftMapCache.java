@@ -45,6 +45,11 @@ public class SoftMapCache implements CacheManager {
     }
 
     @Override
+    public void remove(String url) {
+        cache.remove(url);
+    }
+
+    @Override
     public void clean() {
         cache.clear();
     }

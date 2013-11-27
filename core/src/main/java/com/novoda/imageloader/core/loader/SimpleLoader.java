@@ -22,6 +22,7 @@ import com.novoda.imageloader.core.LoaderSettings;
 import com.novoda.imageloader.core.OnImageLoadedListener;
 import com.novoda.imageloader.core.exception.ImageNotFoundException;
 import com.novoda.imageloader.core.loader.util.BitmapDisplayer;
+import com.novoda.imageloader.core.loader.util.BitmapRetriever;
 import com.novoda.imageloader.core.loader.util.SingleThreadedLoader;
 import com.novoda.imageloader.core.model.ImageWrapper;
 
@@ -39,7 +40,7 @@ public class SimpleLoader implements Loader {
         this.singleThreadedLoader = new SingleThreadedLoader() {
             @Override
             protected Bitmap loadMissingBitmap(ImageWrapper iw) {
-                return getBitmap(iw.getUrl(), iw.getWidth(), iw.getHeight());
+                return getBitmap(iw.getUrl(), iw.getWidth(), iw.getHeight(), iw.getImageView());
             }
 
             @Override
@@ -94,17 +95,12 @@ public class SimpleLoader implements Loader {
         this.onImageLoadedListener = onImageLoadedListener;
     }
 
-    private Bitmap getBitmap(String url, int width, int height) {
+    private Bitmap getBitmap(String url, int width, int height, ImageView imageView) {
         if (url != null && url.length() >= 0) {
             File f = loaderSettings.getFileManager().getFile(url);
-            if (f.exists()) {
-                Bitmap b = loaderSettings.getBitmapUtil().decodeFileAndScale(f, width, height, loaderSettings.isAllowUpsampling());
-                if (b != null && !b.isRecycled()) {
-                    return b;
-                }
-            }
-            loaderSettings.getNetworkManager().retrieveImage(url, f);
-            return loaderSettings.getBitmapUtil().decodeFileAndScale(f, width, height, loaderSettings.isAllowUpsampling());
+            BitmapRetriever retriever = new BitmapRetriever(url, f, width, height, 0, false, true, imageView, loaderSettings, null);
+            Bitmap b = retriever.getBitmap();
+            return b;
         }
         return null;
     }

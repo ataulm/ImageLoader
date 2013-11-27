@@ -33,6 +33,10 @@ public class NoCache implements CacheManager {
     }
 
     @Override
+    public void remove(String url) {
+    }
+
+    @Override
     public void clean() {
     }
 

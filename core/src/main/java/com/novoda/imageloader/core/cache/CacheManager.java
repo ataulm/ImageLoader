@@ -24,6 +24,10 @@ import android.graphics.Bitmap;
  */
 public interface CacheManager {
     Bitmap get(String imageUrl);
+
     void put(String url, Bitmap bmp);
+
+    void remove(String url);
+
     void clean();
 }

@@ -36,7 +36,6 @@ import static junit.framework.Assert.assertNull;
 import static org.mockito.Mockito.*;
 
 public class NovodaImageLoaderTest {
-
     private LoaderSettings loaderSettings;
     private Context context;
     private NovodaImageLoader defaultImageLoader;
@@ -63,13 +62,6 @@ public class NovodaImageLoaderTest {
         NovodaImageLoader.newInstance(context, loaderSettings);
     }
 
-    private void disableManifestPermission(String permission) {
-        PackageManager pm = mock(PackageManager.class);
-        when(pm.checkPermission(permission, null)).thenReturn(
-                PackageManager.PERMISSION_DENIED);
-        when(context.getPackageManager()).thenReturn(pm);
-    }
-
     @Test
     public void shouldRegisterOnImageLoadedListener() {
         OnImageLoadedListener listener = mock(OnImageLoadedListener.class);
@@ -94,7 +86,6 @@ public class NovodaImageLoaderTest {
         assertNotNull(listenerReference.get());
         System.gc();
         assertNull(listenerReference.get());
-
     }
 
     @Test
@@ -126,7 +117,6 @@ public class NovodaImageLoaderTest {
         defaultImageLoader.cacheImage("http://king.com/img.png", 100, 100);
         // file decode failed, therefore nothing in cache
         verify(cache, never()).put("", null);
-
     }
 
     private void setUpImageManager() {
@@ -141,4 +131,10 @@ public class NovodaImageLoaderTest {
         when(context.getPackageManager()).thenReturn(pm);
     }
 
+    private void disableManifestPermission(String permission) {
+        PackageManager pm = mock(PackageManager.class);
+        when(pm.checkPermission(permission, null)).thenReturn(
+                PackageManager.PERMISSION_DENIED);
+        when(context.getPackageManager()).thenReturn(pm);
+    }
 }

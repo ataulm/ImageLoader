@@ -15,23 +15,17 @@
  */
 package com.novoda.imageloader.core.loader.util;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
-import android.provider.ContactsContract;
 import android.view.animation.Animation;
 import android.widget.ImageView;
 
 import com.novoda.imageloader.core.LoaderSettings;
 import com.novoda.imageloader.core.OnImageLoadedListener;
-import com.novoda.imageloader.core.exception.ImageNotFoundException;
 import com.novoda.imageloader.core.model.ImageTag;
 import com.novoda.imageloader.core.model.ImageWrapper;
 
 import java.io.File;
-import java.io.InputStream;
 import java.lang.ref.WeakReference;
 
 public class LoaderTask extends AsyncTask<String, Void, Bitmap> {
@@ -67,79 +61,8 @@ public class LoaderTask extends AsyncTask<String, Void, Bitmap> {
             return null;
         }
 
-        if (url == null || url.length() <= 0 || url.equals("_url_error")) {
-            return getNotFoundImage(context);
-        }
-
-        if (!imageFile.exists()) {
-            if (useCacheOnly) {
-                return null;
-            }
-            Uri uri = Uri.parse(url);
-            if (isContactPhoto(uri)) {
-                return getContactPhoto(uri);
-            } else if (isFromFileSystem(uri)) {
-                return getLocalImage(uri);
-            } else {
-                return getNetworkImage(imageFile, uri);
-            }
-        }
-        return getImageFromFile(imageFile);
-    }
-
-    private boolean isContactPhoto(Uri uri) {
-        return uri.toString().startsWith("content://com.android.contacts/");
-    }
-
-    private Bitmap getContactPhoto(Uri uri) {
-        InputStream photoDataStream = ContactsContract.Contacts.openContactPhotoInputStream(context.getContentResolver(), uri);
-        Bitmap photo = BitmapFactory.decodeStream(photoDataStream);
-        return photo;
-    }
-
-    private boolean isFromFileSystem(Uri uri) {
-        return uri.getScheme() != null ? uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE) : true;
-    }
-
-    private Bitmap getLocalImage(Uri uri) {
-        File image = new File(uri.getPath());
-        if (image.exists()) {
-            return getImageFromFile(image);
-        } else {
-            return getNotFoundImage(context);
-        }
-    }
-
-    private Bitmap getNetworkImage(File imageFile, Uri uri) {
-        try {
-            loaderSettings.getNetworkManager().retrieveImage(uri.toString(), imageFile);
-        } catch (ImageNotFoundException inf) {
-            return getNotFoundImage(context);
-        }
-        if (hasImageViewUrlChanged()) {
-            return null;
-        }
-        return getImageFromFile(imageFile);
-    }
-
-    private Bitmap getImageFromFile(File imageFile) {
-        Bitmap b;
-        if (loaderSettings.isAlwaysUseOriginalSize()) {
-            b = loaderSettings.getBitmapUtil().decodeFile(imageFile, width, height);
-        } else {
-            b = loaderSettings.getBitmapUtil().decodeFileAndScale(imageFile, width, height, loaderSettings.isAllowUpsampling());
-        }
-
-        if (b == null) {
-            // decoding failed
-            return b;
-        }
-
-        if (saveScaledImage) {
-            saveScaledImage(imageFile, b);
-        }
-        loaderSettings.getCacheManager().put(url, b);
-        return b;
+        BitmapRetriever imageRetriever = new BitmapRetriever(url, imageFile, width, height, notFoundResourceId, useCacheOnly, saveScaledImage, imageView, loaderSettings, context);
+        return imageRetriever.getBitmap();
     }
 
     private void extractWrapperData(ImageWrapper imageWrapper) {
@@ -152,10 +75,6 @@ public class LoaderTask extends AsyncTask<String, Void, Bitmap> {
         context = imageWrapper.getContext();
         imageFile = getImageFile(imageWrapper);
         animation = imageView.getAnimation();
-    }
-
-    private void saveScaledImage(File imageFile, Bitmap b) {
-        loaderSettings.getFileManager().saveBitmap(imageFile.getAbsolutePath(), b, width, height);
     }
 
     private File getImageFile(ImageWrapper imageWrapper) {

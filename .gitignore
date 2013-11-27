@@ -10,6 +10,7 @@
 release.properties
 project.properties
 local.properties
+.DS_Store
 **/project.properties
 target
 out

@@ -86,6 +86,11 @@ public class LruBitmapCache implements CacheManager {
     }
 
     @Override
+    public void remove(String url) {
+        cache.remove(url);
+    }
+
+    @Override
     public void clean() {
         reset();
     }

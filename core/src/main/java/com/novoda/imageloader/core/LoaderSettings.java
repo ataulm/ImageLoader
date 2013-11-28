@@ -37,133 +37,157 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * LoaderSettings is the main class used to customize the behavior of the imageLoader.
- * To provide a more user friendly way to set different parameters it is possible to use
- * a builder : SettingsBuilder.
+ * LoaderSettings is used to customise the behaviour of the ImageLoader.
+ * <p/>
+ * Either use the default constructor to instantiate a LoaderSettings object with standard values, or use
+ * {@link com.novoda.imageloader.core.LoaderSettings.Builder} to construct a customised variant.
  */
 public class LoaderSettings {
+    private static final int ONE_SECOND = 1000;
+    private static final int ONE_HOUR = 3600 * ONE_SECOND;
+    private static final int ONE_DAY = 24 * ONE_HOUR;
+    private static final int ONE_WEEK = 7 * ONE_DAY;
 
-    private static final long DEFAULT_EXPIRATION_PERIOD = 7L * 24L * 3600L * 1000L;
+    private static final int DEFAULT_READ_TIMEOUT = 10 * ONE_SECOND;
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 10 * ONE_SECOND;
+    private static final int DEFAULT_EXPIRATION_PERIOD = ONE_WEEK;
+
     private static final boolean DEFAULT_INCLUDE_QUERY_IN_HASH = true;
-    private static final int DEFAULT_CONNECTION_TIMEOUT = 10 * 1000;
-    private static final int DEFAULT_READ_TIMEOUT = 10 * 1000;
     private static final boolean DEFAULT_DISCONNECT_ON_EVERY_CALL = false;
+    private static final boolean DEFAULT_CLEAN_ON_SETUP = true;
     private static final boolean DEFAULT_USE_ASYNC_TASKS = true;
     private static final boolean DEFAULT_ALLOW_UPSAMPLING = false;
     private static final boolean DEFAULT_ALWAYS_USE_ORIGINAL_SIZE = false;
 
-    private final BitmapUtil bitmapUtil = new BitmapUtil();
+    private final BitmapUtil bitmapUtil;
+
+    private final Map<String, String> headers;
 
     private CacheManager cacheManager;
-    private CacheManager resCacheManager;
+
+    private CacheManager resourceCacheManager;
     private FileManager fileManager;
     private NetworkManager networkManager;
     private Loader loader;
 
     private File cacheDir;
-    private int connectionTimeout;
     private int readTimeout;
-    private final Map<String, String> headers = new HashMap<String, String>();
-    private long expirationPeriod;
-    private boolean isQueryIncludedInHash;
-    private boolean disconnectOnEveryCall;
-    private int sdkVersion;
-    private boolean useAsyncTasks;
-    private boolean allowUpsampling;
-    private boolean alwaysUseOriginalSize;
+    private int connectionTimeout;
+    private long expirationPeriodInMillis;
+    private boolean shouldIncludeQueryInHash;
+    private boolean shouldCleanExpiredItemsInCacheOnSetup;
+    private boolean shouldDisconnectOnEveryCall;
+    private boolean shouldUseAsyncTasks;
+    private boolean shouldAllowUpsampling;
 
-    /**
-     * Constructor with all settings set to default values
-     */
+    private boolean shouldAlwaysUseOriginalSize;
+
     public LoaderSettings() {
-        this.setExpirationPeriod(DEFAULT_EXPIRATION_PERIOD);
-        this.setQueryIncludedInHash(DEFAULT_INCLUDE_QUERY_IN_HASH);
-        this.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-        this.setReadTimeout(DEFAULT_READ_TIMEOUT);
-        this.setDisconnectOnEveryCall(DEFAULT_DISCONNECT_ON_EVERY_CALL);
-        this.setUseAsyncTasks(DEFAULT_USE_ASYNC_TASKS);
-        this.setAllowUpsampling(DEFAULT_ALLOW_UPSAMPLING);
-        this.setAlwaysUseOriginalSize(DEFAULT_ALWAYS_USE_ORIGINAL_SIZE);
+        bitmapUtil = new BitmapUtil();
+        headers = new HashMap<String, String>();
+
+        expirationPeriodInMillis = DEFAULT_EXPIRATION_PERIOD;
+        readTimeout = DEFAULT_READ_TIMEOUT;
+        connectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
+
+        shouldIncludeQueryInHash = DEFAULT_INCLUDE_QUERY_IN_HASH;
+        shouldCleanExpiredItemsInCacheOnSetup = DEFAULT_CLEAN_ON_SETUP;
+        shouldDisconnectOnEveryCall = DEFAULT_DISCONNECT_ON_EVERY_CALL;
+        shouldUseAsyncTasks = DEFAULT_USE_ASYNC_TASKS;
+        shouldAllowUpsampling = DEFAULT_ALLOW_UPSAMPLING;
+        shouldAlwaysUseOriginalSize = DEFAULT_ALWAYS_USE_ORIGINAL_SIZE;
+    }
+
+    private LoaderSettings(BitmapUtil bitmapUtil, Map<String, String> headers, CacheManager cacheManager,
+                           CacheManager resourceCacheManager, FileManager fileManager, NetworkManager networkManager,
+                           Loader loader, File cacheDir, int readTimeout, int connectionTimeout,
+                           long expirationPeriodInMillis, boolean shouldIncludeQueryInHash,
+                           boolean shouldCleanExpiredItemsInCacheOnSetup, boolean shouldDisconnectOnEveryCall,
+                           boolean shouldUseAsyncTasks, boolean shouldAllowUpsampling,
+                           boolean shouldAlwaysUseOriginalSize) {
+        this.bitmapUtil = bitmapUtil;
+        this.headers = headers;
+
+        this.cacheManager = cacheManager;
+        this.resourceCacheManager = resourceCacheManager;
+        this.fileManager = fileManager;
+        this.networkManager = networkManager;
+
+        this.loader = loader;
+        this.cacheDir = cacheDir;
+        this.readTimeout = readTimeout;
+        this.connectionTimeout = connectionTimeout;
+        this.expirationPeriodInMillis = expirationPeriodInMillis;
+
+        this.shouldIncludeQueryInHash = shouldIncludeQueryInHash;
+        this.shouldCleanExpiredItemsInCacheOnSetup = shouldCleanExpiredItemsInCacheOnSetup;
+        this.shouldDisconnectOnEveryCall = shouldDisconnectOnEveryCall;
+        this.shouldUseAsyncTasks = shouldUseAsyncTasks;
+        this.shouldAllowUpsampling = shouldAllowUpsampling;
+        this.shouldAlwaysUseOriginalSize = shouldAlwaysUseOriginalSize;
     }
 
     public BitmapUtil getBitmapUtil() {
         return bitmapUtil;
     }
 
+    /**
+     * Returns a File reference to the directory where images will be cached on disk.
+     *
+     * @return directory the cache directory
+     */
     public File getCacheDir() {
         return cacheDir;
     }
 
-    public void setCacheDir(File cacheDir) {
-        this.cacheDir = cacheDir;
-    }
-
     /**
-     * Time period in millis how long cached images should be kept in the file storage.
+     * Returns time in millis after which images cached to disk may be deleted.
      *
-     * @return
+     * @return expirationPeriodInMillis the time in millis after cached image will expire
      */
     public long getExpirationPeriod() {
-        return expirationPeriod;
-    }
-
-    public void setExpirationPeriod(long expirationPeriod) {
-        this.expirationPeriod = expirationPeriod;
+        return expirationPeriodInMillis;
     }
 
     /**
      * Flag indicating whether queries of image urls should be used as part of the cache key.
-     * If set to false the cache returns the same image e.g.
-     * for <code>http://king.com/img.png?v=1</code> and <code>http://king.com/img.png?v=2</code>
+     * <p/>
+     * If true, urls with different query parameters are considered as distinct; {@code http://example.com/img.png?v=1}
+     * and {@code http://example.com/img.png?v=2} will resolve as distinct urls.
+     * <p/>
+     * If false, it will consider them to be the same url.
      *
-     * @return true if urls with different queries refer to different images.
+     * @return shouldIncludeQueryInHash true if the query is part of the url, false if it is discarded
      */
-    public boolean isQueryIncludedInHash() {
-        return isQueryIncludedInHash;
-    }
-
-    public void setQueryIncludedInHash(boolean isQueryIncludedInHash) {
-        this.isQueryIncludedInHash = isQueryIncludedInHash;
+    public boolean shouldIncludeQueryInHash() {
+        return shouldIncludeQueryInHash;
     }
 
     public int getConnectionTimeout() {
         return connectionTimeout;
     }
 
-    public void setConnectionTimeout(int connectionTimeout) {
-        this.connectionTimeout = connectionTimeout;
-    }
-
     public int getReadTimeout() {
         return readTimeout;
-    }
-
-    public void setReadTimeout(int readTimeout) {
-        this.readTimeout = readTimeout;
     }
 
     public Map<String, String> getHeaders() {
         return Collections.unmodifiableMap(headers);
     }
 
-    public void addHeader(String key, String value) {
-        headers.put(key, value);
-    }
-
     public boolean getDisconnectOnEveryCall() {
-        return disconnectOnEveryCall;
+        return shouldDisconnectOnEveryCall;
     }
 
-    public void setDisconnectOnEveryCall(boolean disconnectOnEveryCall) {
-        this.disconnectOnEveryCall = disconnectOnEveryCall;
-    }
-
-    public void setSdkVersion(int sdkVersion) {
-        this.sdkVersion = sdkVersion;
-    }
-
+    /**
+     * Returns Build.VERSION.SDK_INT.
+     * <p/>
+     * Used so it can be mocked and allows testing against API-specific behaviours.
+     *
+     * @return sdkVersion
+     */
     public int getSdkVersion() {
-        return this.sdkVersion;
+        return Build.VERSION.SDK_INT;
     }
 
     public CacheManager getCacheManager() {
@@ -173,19 +197,11 @@ public class LoaderSettings {
         return cacheManager;
     }
 
-    public void setCacheManager(CacheManager cacheManager) {
-        this.cacheManager = cacheManager;
-    }
-
     public CacheManager getResCacheManager() {
-        if (resCacheManager == null) {
-            resCacheManager = new SoftMapCache();
+        if (resourceCacheManager == null) {
+            resourceCacheManager = new SoftMapCache();
         }
-        return resCacheManager;
-    }
-
-    public void setResCacheManager(CacheManager resCacheManager) {
-        this.resCacheManager = resCacheManager;
+        return resourceCacheManager;
     }
 
     public NetworkManager getNetworkManager() {
@@ -195,10 +211,6 @@ public class LoaderSettings {
         return networkManager;
     }
 
-    public void setNetworkManager(NetworkManager networkManager) {
-        this.networkManager = networkManager;
-    }
-
     public FileManager getFileManager() {
         if (fileManager == null) {
             fileManager = new BasicFileManager(this);
@@ -206,25 +218,20 @@ public class LoaderSettings {
         return fileManager;
     }
 
-    public void setFileManager(FileManager fileManager) {
-        this.fileManager = fileManager;
-    }
-
-    public boolean isUseAsyncTasks() {
-        return useAsyncTasks;
-    }
-
-    public void setUseAsyncTasks(boolean useAsyncTasks) {
-        this.useAsyncTasks = useAsyncTasks;
-    }
-
-    private void setLoader(Loader loader) {
-        this.loader = loader;
+    /**
+     * Specifies whether the LoaderSettings is configured to use asynchronous tasks.
+     * <p/>
+     * Defaults to true, and can be turned off using {@link com.novoda.imageloader.core.LoaderSettings.Builder#doNotUseAsyncTasks()}
+     *
+     * @return shouldUseAsyncTasks the flag indicating whether or not to use asynchronous tasks
+     */
+    public boolean shouldUseAsyncTasks() {
+        return shouldUseAsyncTasks;
     }
 
     public Loader getLoader() {
         if (loader == null) {
-            if (isUseAsyncTasks()) {
+            if (shouldUseAsyncTasks()) {
                 this.loader = new ConcurrentLoader(this);
             } else {
                 this.loader = new SimpleLoader(this);
@@ -233,23 +240,104 @@ public class LoaderSettings {
         return loader;
     }
 
+    /**
+     * should clean all expired items in the cache on setup
+     *
+     * @return
+     */
+    public boolean shouldCleanOnSetup() {
+        return shouldCleanExpiredItemsInCacheOnSetup;
+    }
+
+    public boolean shouldAlwaysUseOriginalSize() {
+        return shouldAlwaysUseOriginalSize;
+    }
+
+    /**
+     * Flag to enable upsampling for small images.
+     * <p/>
+     * If true and the image is smaller than the requested size the image is resized to a larger image.
+     * Default is false.
+     *
+     * @return true if upsampling is allowed
+     */
+    public boolean shouldAllowUpsampling() {
+        return shouldAllowUpsampling;
+    }
+
+    /**
+     * @param allowUpsampling
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setAllowUpsampling(boolean allowUpsampling) {
+        this.shouldAllowUpsampling = allowUpsampling;
+    }
+
+    /**
+     * @param networkManager
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setNetworkManager(NetworkManager networkManager) {
+        this.networkManager = networkManager;
+    }
+
+    /**
+     * @param fileManager
+     * @see Builder#withFileManager(com.novoda.imageloader.core.file.FileManager)
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setFileManager(FileManager fileManager) {
+        this.fileManager = fileManager;
+    }
+
+    /**
+     * @deprecated in 1.6.2. Use {@link LoaderSettings#shouldUseAsyncTasks} instead.
+     */
+    @Deprecated
+    public boolean isUseAsyncTasks() {
+        return shouldUseAsyncTasks();
+    }
+
+    /**
+     * @deprecated in 1.6.2. Use {@link #shouldCleanOnSetup()} instead.
+     */
+    @Deprecated
     public boolean isCleanOnSetup() {
         return true;
     }
 
     /**
-     * Flag to enable upsampling for small images.
-     * If true and the image is smaller than the requested size the image is resized to a larger image.
-     * Default is false.
-     *
-     * @return true if
+     * @deprecated in 1.6.2. Use {@link #shouldAllowUpsampling()} instead.
      */
+    @Deprecated
     public boolean isAllowUpsampling() {
-        return allowUpsampling;
+        return shouldAllowUpsampling();
     }
 
-    public void setAllowUpsampling(boolean allowUpsampling) {
-        this.allowUpsampling = allowUpsampling;
+    /**
+     * @param useAsyncTasks
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setUseAsyncTasks(boolean useAsyncTasks) {
+        this.shouldUseAsyncTasks = useAsyncTasks;
+    }
+
+    /**
+     * @param loader
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    private void setLoader(Loader loader) {
+        this.loader = loader;
     }
 
     /**
@@ -258,18 +346,143 @@ public class LoaderSettings {
      * Default is false.
      *
      * @return true if images are always cached in the original size
+     * @deprecated in 1.6.2. Use {@link #shouldAlwaysUseOriginalSize()}
      */
+    @Deprecated
     public boolean isAlwaysUseOriginalSize() {
-        return alwaysUseOriginalSize;
+        return shouldAlwaysUseOriginalSize();
     }
 
+    /**
+     * @param readTimeout
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setReadTimeout(int readTimeout) {
+        this.readTimeout = readTimeout;
+    }
+
+    /**
+     * @param isQueryIncludedInHash
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setQueryIncludedInHash(boolean isQueryIncludedInHash) {
+        this.shouldIncludeQueryInHash = isQueryIncludedInHash;
+    }
+
+    /**
+     * @param cacheDir
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setCacheDir(File cacheDir) {
+        this.cacheDir = cacheDir;
+    }
+
+    /**
+     * Flag indicating whether queries of image urls should be used as part of the cache key.
+     * If set to false the cache returns the same image e.g.
+     * for <code>http://king.com/img.png?v=1</code> and <code>http://king.com/img.png?v=2</code>
+     *
+     * @return true if urls with different queries refer to different images.
+     * @deprecated in 1.6.2. Use {@link #shouldIncludeQueryInHash()}
+     */
+    @Deprecated
+    public boolean isQueryIncludedInHash() {
+        return shouldIncludeQueryInHash();
+    }
+
+    /**
+     * @param connectionTimeout
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setConnectionTimeout(int connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
+    }
+
+    /**
+     * @param key
+     * @param value
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void addHeader(String key, String value) {
+        headers.put(key, value);
+    }
+
+    /**
+     * @param alwaysUseOriginalSize
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
     public void setAlwaysUseOriginalSize(boolean alwaysUseOriginalSize) {
-        this.alwaysUseOriginalSize = alwaysUseOriginalSize;
+        this.shouldAlwaysUseOriginalSize = alwaysUseOriginalSize;
+    }
+
+    /**
+     * @param expirationPeriod
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setExpirationPeriod(long expirationPeriod) {
+        this.expirationPeriodInMillis = expirationPeriod;
+    }
+
+    /**
+     * @param resCacheManager
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setResCacheManager(CacheManager resCacheManager) {
+        this.resourceCacheManager = resCacheManager;
+    }
+
+    /**
+     * @param cacheManager
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setCacheManager(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+    }
+
+    /**
+     * @param disconnectOnEveryCall
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setDisconnectOnEveryCall(boolean disconnectOnEveryCall) {
+        this.shouldDisconnectOnEveryCall = disconnectOnEveryCall;
+    }
+
+    /**
+     * @param sdkVersion
+     * @see com.novoda.imageloader.core.LoaderSettings#getSdkVersion()
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
+     * the LoaderSettings object after creation - use the Builder instead.
+     */
+    @Deprecated
+    public void setSdkVersion(int sdkVersion) {
     }
 
     /**
      * Builder for the LoaderSettings.
+     *
+     * @deprecated in 1.6.2. Use LoaderSettings#Builder instead
      */
+    @Deprecated
     public static class SettingsBuilder {
 
         private LoaderSettings settings;
@@ -390,4 +603,180 @@ public class LoaderSettings {
 
     }
 
+    /**
+     * Provides an easy way of configuring the LoaderSettings.
+     *
+     * @see LoaderSettings
+     */
+    public static class Builder {
+
+        private LoaderSettings settings;
+        private final BitmapUtil bitmapUtil;
+        private final Map<String, String> headers;
+
+        private CacheManager cacheManager;
+        private CacheManager resourceCacheManager;
+        private FileManager fileManager;
+        private NetworkManager networkManager;
+
+        private Loader loader;
+        private File cacheDir;
+        private int readTimeout;
+        private int connectionTimeout;
+        private long expirationPeriodInMillis;
+        private boolean shouldIncludeQueryInHash;
+        private boolean shouldDisconnectOnEveryCall;
+        private boolean shouldCleanExpiredItemsInCacheOnSetup;
+        private boolean shouldUseAsyncTasks;
+        private boolean shouldAllowUpsampling;
+        private boolean shouldAlwaysUseOriginalSize;
+
+        public Builder() {
+            bitmapUtil = new BitmapUtil();
+            headers = new HashMap<String, String>();
+
+            expirationPeriodInMillis = DEFAULT_EXPIRATION_PERIOD;
+            shouldIncludeQueryInHash = DEFAULT_INCLUDE_QUERY_IN_HASH;
+            connectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
+            readTimeout = DEFAULT_READ_TIMEOUT;
+            shouldCleanExpiredItemsInCacheOnSetup = DEFAULT_CLEAN_ON_SETUP;
+            shouldDisconnectOnEveryCall = DEFAULT_DISCONNECT_ON_EVERY_CALL;
+            shouldUseAsyncTasks = DEFAULT_USE_ASYNC_TASKS;
+            shouldAllowUpsampling = DEFAULT_ALLOW_UPSAMPLING;
+            shouldAlwaysUseOriginalSize = DEFAULT_ALWAYS_USE_ORIGINAL_SIZE;
+        }
+
+        /**
+         * Sets expiration of cached images from file storage.
+         *
+         * @param expirationPeriodInMillis the length in millis after which cached images can be removed from storage
+         * @return this LoaderSettings.Builder
+         */
+        public Builder withExpirationPeriod(long expirationPeriodInMillis) {
+            this.expirationPeriodInMillis = expirationPeriodInMillis;
+            return this;
+        }
+
+        /**
+         * Change flag indicating whether queries of image urls should be used as part of the cache key.
+         * If set to false the cache returns the same image e.g. for <code>http://king.com/img.png?v=1</code> and <code>http://king.com/img.png?v=2</code>
+         *
+         * @return this LoaderSettings.Builder
+         */
+        public Builder discardQueryDuringHashGeneration() {
+            shouldIncludeQueryInHash = false;
+            return this;
+        }
+
+        public Builder doNotCleanFileCacheOnSetup() {
+            shouldCleanExpiredItemsInCacheOnSetup = false;
+            return this;
+        }
+
+        /**
+         * @param connectionTimeout
+         * @return this LoaderSettings.Builder
+         */
+        public Builder withConnectionTimeout(int connectionTimeout) {
+            this.connectionTimeout = connectionTimeout;
+            return this;
+        }
+
+        /**
+         * @param readTimeout
+         * @return this LoaderSettings.Builder
+         */
+        public Builder withReadTimeout(int readTimeout) {
+            this.readTimeout = readTimeout;
+            return this;
+        }
+
+        /**
+         * @param key
+         * @param value
+         * @return this LoaderSettings.Builder
+         */
+        public Builder addHeader(String key, String value) {
+            headers.put(key, value);
+            return this;
+        }
+
+        public Builder disconnectOnEveryCall() {
+            shouldDisconnectOnEveryCall = true;
+            return this;
+        }
+
+        public Builder withCacheManager(CacheManager cacheManager) {
+            this.cacheManager = cacheManager;
+            return this;
+        }
+
+        public Builder withResCacheManager(CacheManager resourceCacheManager) {
+            this.resourceCacheManager = resourceCacheManager;
+            return this;
+        }
+
+        /**
+         * @return this LoaderSettings.Builder
+         * @see com.novoda.imageloader.core.LoaderSettings#shouldUseAsyncTasks()
+         */
+        public Builder doNotUseAsyncTasks() {
+            shouldUseAsyncTasks = false;
+            return this;
+        }
+
+        public Builder withCacheDir(File cacheDir) {
+            this.cacheDir = cacheDir;
+            return this;
+        }
+
+        /**
+         * Changes flag to enable upsampling for small images.
+         * If true and the image is smaller than the requested size
+         * the image is resized to a larger image. Default is false.
+         *
+         * @return this SettingsBuilder
+         */
+        public Builder allowUpsampling() {
+            shouldAllowUpsampling = true;
+            return this;
+        }
+
+        /**
+         * Changes flag to disable image resizing.
+         * Set the flag to true if you want to avoid bitmap resizing. Default is false.
+         *
+         * @return this SettingsBuilder
+         */
+        public Builder disableResizing() {
+            shouldAlwaysUseOriginalSize = true;
+            return this;
+        }
+
+        public Builder withFileManager(FileManager fileManager) {
+            this.fileManager = fileManager;
+            return this;
+        }
+
+        public Builder withNetworkManager(NetworkManager networkManager) {
+            this.networkManager = networkManager;
+            return this;
+        }
+
+        public Builder withLoader(Loader loader) {
+            this.loader = loader;
+            return this;
+        }
+
+        public LoaderSettings build(Context context) {
+            cacheDir = new FileUtil().prepareCacheDirectory(new AndroidFileContext(context));
+
+            settings = new LoaderSettings(bitmapUtil, headers, cacheManager, resourceCacheManager, fileManager,
+                    networkManager, loader, cacheDir, readTimeout, connectionTimeout, expirationPeriodInMillis,
+                    shouldIncludeQueryInHash, shouldCleanExpiredItemsInCacheOnSetup, shouldDisconnectOnEveryCall,
+                    shouldUseAsyncTasks, shouldAllowUpsampling, shouldAlwaysUseOriginalSize);
+
+            return settings;
+        }
+    }
 }

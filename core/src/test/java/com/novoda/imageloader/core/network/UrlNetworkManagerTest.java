@@ -35,7 +35,7 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-public class UrlNetworlManagerTest extends FileTestCase {
+public class UrlNetworkManagerTest extends FileTestCase {
 
     private UrlNetworkManager urlNetworkManager;
     private LoaderSettings loaderSettings;
@@ -126,6 +126,7 @@ public class UrlNetworlManagerTest extends FileTestCase {
 
     @Test
     public void shouldResolveRedirect() throws IOException {
+        final int UrlNetworkManager_TEMP_REDIRECT = 307;
         when(httpURLConnection.getResponseCode()).thenAnswer(new Answer<Integer>() {
             private boolean redirect = true;
 
@@ -133,7 +134,7 @@ public class UrlNetworlManagerTest extends FileTestCase {
             public Integer answer(InvocationOnMock invocation) throws Throwable {
                 if (redirect) {
                     redirect = false;
-                    return 307;
+                    return UrlNetworkManager_TEMP_REDIRECT;
                 }
                 return 200;
             }

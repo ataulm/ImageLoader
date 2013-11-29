@@ -68,7 +68,6 @@ public class UrlNetworkManager implements NetworkManager {
             throw new ImageNotFoundException();
         } catch (Throwable ex) {
             ex.printStackTrace();
-            // TODO
         } finally {
             if (conn != null && settings.getDisconnectOnEveryCall()) {
                 conn.disconnect();
@@ -88,7 +87,8 @@ public class UrlNetworkManager implements NetworkManager {
     }
 
     public void redirectManually(File f, HttpURLConnection conn) {
-        if (manualRedirects++ < 3) {
+        manualRedirects++;
+        if (manualRedirects <= 3) {
             retrieveImage(conn.getHeaderField("Location"), f);
         } else {
             manualRedirects = 0;

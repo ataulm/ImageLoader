@@ -88,10 +88,10 @@ public class LoaderSettings {
 
         this.shouldIncludeQueryInHash = DEFAULT_INCLUDE_QUERY_IN_HASH;
         this.shouldCleanExpiredItemsInCacheOnSetup = DEFAULT_CLEAN_ON_SETUP;
-        shouldDisconnectOnEveryCall = DEFAULT_DISCONNECT_ON_EVERY_CALL;
-        shouldLoadConcurrently = DEFAULT_USE_ASYNC_TASKS;
-        shouldAllowUpsampling = DEFAULT_ALLOW_UPSAMPLING;
-        shouldAlwaysUseOriginalSize = DEFAULT_ALWAYS_USE_ORIGINAL_SIZE;
+        this.shouldDisconnectOnEveryCall = DEFAULT_DISCONNECT_ON_EVERY_CALL;
+        this.shouldLoadConcurrently = DEFAULT_USE_ASYNC_TASKS;
+        this.shouldAllowUpsampling = DEFAULT_ALLOW_UPSAMPLING;
+        this.shouldAlwaysUseOriginalSize = DEFAULT_ALWAYS_USE_ORIGINAL_SIZE;
     }
 
     private LoaderSettings(BitmapUtil bitmapUtil, Map<String, String> headers, CacheManager cacheManager,

@@ -44,11 +44,12 @@ public class BasicFileManagerTest extends FileTestCase {
 
     @Test
     public void shouldDistinguishBetweenUrlWithQueryIfIsQueryIncludedInHashIsTrue() {
-        when(settings.isCleanOnSetup()).thenReturn(false);
+        when(settings.shouldCleanOnSetup()).thenReturn(false);
         when(settings.getCacheDir()).thenReturn(cacheDir);
-        when(settings.isQueryIncludedInHash()).thenReturn(true);
+        when(settings.shouldIncludeQueryInHash()).thenReturn(true);
+        BasicFileManager.FileManagerSettings fileManagerSettings = new BasicFileManager.FileManagerSettings(settings.getCacheDir(), settings.shouldIncludeQueryInHash(), settings.getExpirationPeriod());
+        basicFileManager = new BasicFileManager(fileManagerSettings);
 
-        basicFileManager = new BasicFileManager(settings);
         String filePath1 = basicFileManager.getFile("http://googl.com?param=1").getAbsolutePath();
         String filePath2 = basicFileManager.getFile("http://googl.com?param=2").getAbsolutePath();
 

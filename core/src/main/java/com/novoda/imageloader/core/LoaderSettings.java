@@ -60,16 +60,13 @@ public class LoaderSettings {
     private static final boolean DEFAULT_ALWAYS_USE_ORIGINAL_SIZE = false;
 
     private final BitmapUtil bitmapUtil;
-
     private final Map<String, String> headers;
 
     private CacheManager cacheManager;
-
     private CacheManager resourceCacheManager;
     private FileManager fileManager;
     private NetworkManager networkManager;
     private Loader loader;
-
     private File cacheDir;
     private int readTimeout;
     private int connectionTimeout;
@@ -79,19 +76,18 @@ public class LoaderSettings {
     private boolean shouldDisconnectOnEveryCall;
     private boolean shouldUseAsyncTasks;
     private boolean shouldAllowUpsampling;
-
     private boolean shouldAlwaysUseOriginalSize;
 
     public LoaderSettings() {
-        bitmapUtil = new BitmapUtil();
-        headers = new HashMap<String, String>();
+        this.bitmapUtil = new BitmapUtil();
+        this.headers = new HashMap<String, String>();
 
-        expirationPeriodInMillis = DEFAULT_EXPIRATION_PERIOD;
-        readTimeout = DEFAULT_READ_TIMEOUT;
-        connectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
+        this.expirationPeriodInMillis = DEFAULT_EXPIRATION_PERIOD;
+        this.readTimeout = DEFAULT_READ_TIMEOUT;
+        this.connectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
 
-        shouldIncludeQueryInHash = DEFAULT_INCLUDE_QUERY_IN_HASH;
-        shouldCleanExpiredItemsInCacheOnSetup = DEFAULT_CLEAN_ON_SETUP;
+        this.shouldIncludeQueryInHash = DEFAULT_INCLUDE_QUERY_IN_HASH;
+        this.shouldCleanExpiredItemsInCacheOnSetup = DEFAULT_CLEAN_ON_SETUP;
         shouldDisconnectOnEveryCall = DEFAULT_DISCONNECT_ON_EVERY_CALL;
         shouldUseAsyncTasks = DEFAULT_USE_ASYNC_TASKS;
         shouldAllowUpsampling = DEFAULT_ALLOW_UPSAMPLING;
@@ -134,7 +130,7 @@ public class LoaderSettings {
     /**
      * Returns a File reference to the directory where images will be cached on disk.
      *
-     * @return directory the cache directory
+     * @return the cache directory
      */
     public File getCacheDir() {
         return cacheDir;
@@ -143,7 +139,7 @@ public class LoaderSettings {
     /**
      * Returns time in millis after which images cached to disk may be deleted.
      *
-     * @return expirationPeriodInMillis the time in millis after cached image will expire
+     * @return the time in millis after cached image will expire
      */
     public long getExpirationPeriod() {
         return expirationPeriodInMillis;
@@ -157,7 +153,7 @@ public class LoaderSettings {
      * <p/>
      * If false, it will consider them to be the same url.
      *
-     * @return shouldIncludeQueryInHash true if the query is part of the url, false if it is discarded
+     * @return true if the query is part of the url, false if it is discarded
      */
     public boolean shouldIncludeQueryInHash() {
         return shouldIncludeQueryInHash;
@@ -221,7 +217,8 @@ public class LoaderSettings {
     /**
      * Specifies whether the LoaderSettings is configured to use asynchronous tasks.
      * <p/>
-     * Defaults to true, and can be turned off using {@link com.novoda.imageloader.core.LoaderSettings.Builder#doNotUseAsyncTasks()}
+     * Defaults to true, and can be turned off using
+     * {@link com.novoda.imageloader.core.LoaderSettings.Builder#doNotUseAsyncTasks()}
      *
      * @return shouldUseAsyncTasks the flag indicating whether or not to use asynchronous tasks
      */
@@ -267,8 +264,8 @@ public class LoaderSettings {
 
     /**
      * @param allowUpsampling
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setAllowUpsampling(boolean allowUpsampling) {
@@ -277,8 +274,8 @@ public class LoaderSettings {
 
     /**
      * @param networkManager
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setNetworkManager(NetworkManager networkManager) {
@@ -288,8 +285,8 @@ public class LoaderSettings {
     /**
      * @param fileManager
      * @see Builder#withFileManager(com.novoda.imageloader.core.file.FileManager)
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setFileManager(FileManager fileManager) {
@@ -322,8 +319,8 @@ public class LoaderSettings {
 
     /**
      * @param useAsyncTasks
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setUseAsyncTasks(boolean useAsyncTasks) {
@@ -332,8 +329,8 @@ public class LoaderSettings {
 
     /**
      * @param loader
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     private void setLoader(Loader loader) {
@@ -355,8 +352,8 @@ public class LoaderSettings {
 
     /**
      * @param readTimeout
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setReadTimeout(int readTimeout) {
@@ -365,8 +362,8 @@ public class LoaderSettings {
 
     /**
      * @param isQueryIncludedInHash
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setQueryIncludedInHash(boolean isQueryIncludedInHash) {
@@ -375,8 +372,8 @@ public class LoaderSettings {
 
     /**
      * @param cacheDir
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setCacheDir(File cacheDir) {
@@ -398,8 +395,8 @@ public class LoaderSettings {
 
     /**
      * @param connectionTimeout
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setConnectionTimeout(int connectionTimeout) {
@@ -409,8 +406,8 @@ public class LoaderSettings {
     /**
      * @param key
      * @param value
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void addHeader(String key, String value) {
@@ -419,8 +416,8 @@ public class LoaderSettings {
 
     /**
      * @param alwaysUseOriginalSize
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setAlwaysUseOriginalSize(boolean alwaysUseOriginalSize) {
@@ -429,8 +426,8 @@ public class LoaderSettings {
 
     /**
      * @param expirationPeriod
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setExpirationPeriod(long expirationPeriod) {
@@ -439,8 +436,8 @@ public class LoaderSettings {
 
     /**
      * @param resCacheManager
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setResCacheManager(CacheManager resCacheManager) {
@@ -449,8 +446,8 @@ public class LoaderSettings {
 
     /**
      * @param cacheManager
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setCacheManager(CacheManager cacheManager) {
@@ -459,8 +456,8 @@ public class LoaderSettings {
 
     /**
      * @param disconnectOnEveryCall
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setDisconnectOnEveryCall(boolean disconnectOnEveryCall) {
@@ -470,8 +467,8 @@ public class LoaderSettings {
     /**
      * @param sdkVersion
      * @see com.novoda.imageloader.core.LoaderSettings#getSdkVersion()
-     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to modify
-     * the LoaderSettings object after creation - use the Builder instead.
+     * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
+     * modify the LoaderSettings object after creation - use the Builder instead.
      */
     @Deprecated
     public void setSdkVersion(int sdkVersion) {
@@ -504,7 +501,9 @@ public class LoaderSettings {
 
         /**
          * Change flag indicating whether queries of image urls should be used as part of the cache key.
-         * If set to false the cache returns the same image e.g. for <code>http://king.com/img.png?v=1</code> and <code>http://king.com/img.png?v=2</code>
+         * <p/>
+         * If set to false the cache returns the same image e.g. for {@code http://king.com/img.png?v=1} and
+         * {@code http://king.com/img.png?v=2}.
          *
          * @param enableQueryInHashGeneration set to false if querys in urls should be ignored.
          * @return this SettingsBuilder.
@@ -659,7 +658,8 @@ public class LoaderSettings {
 
         /**
          * Change flag indicating whether queries of image urls should be used as part of the cache key.
-         * If set to false the cache returns the same image e.g. for <code>http://king.com/img.png?v=1</code> and <code>http://king.com/img.png?v=2</code>
+         * If set to false the cache returns the same image e.g. for {@code http://king.com/img.png?v=1} and
+         * {@code http://king.com/img.png?v=2}.
          *
          * @return this LoaderSettings.Builder
          */
@@ -769,7 +769,11 @@ public class LoaderSettings {
         }
 
         public LoaderSettings build(Context context) {
-            cacheDir = new FileUtil().prepareCacheDirectory(new AndroidFileContext(context));
+            if (cacheDir == null) {
+                cacheDir = new FileUtil().prepareCacheDirectory(new AndroidFileContext(context));
+            }
+
+            setupFileManager();
 
             settings = new LoaderSettings(bitmapUtil, headers, cacheManager, resourceCacheManager, fileManager,
                     networkManager, loader, cacheDir, readTimeout, connectionTimeout, expirationPeriodInMillis,
@@ -777,6 +781,18 @@ public class LoaderSettings {
                     shouldUseAsyncTasks, shouldAllowUpsampling, shouldAlwaysUseOriginalSize);
 
             return settings;
+        }
+
+        private void setupFileManager() {
+            if (fileManager == null) {
+                BasicFileManager.FileManagerSettings fileManagerSettings = new BasicFileManager.FileManagerSettings(
+                        cacheDir, shouldIncludeQueryInHash, expirationPeriodInMillis);
+                fileManager = new BasicFileManager(fileManagerSettings);
+            }
+
+            if (shouldCleanExpiredItemsInCacheOnSetup) {
+                fileManager.cleanOldFiles();
+            }
         }
     }
 }

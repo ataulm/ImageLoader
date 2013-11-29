@@ -57,16 +57,16 @@ public class FileUtil {
     }
 
     public boolean deleteFileCache(String cacheDirFullPath) {
-        return reduceFileCache(cacheDirFullPath, -1);
+        return reduceFileCache(cacheDirFullPath, 0);
     }
 
     public boolean reduceFileCache(String cacheDirFullPath, long expirationPeriod) {
         File cacheDir = new File(cacheDirFullPath);
         if (cacheDir.isDirectory()) {
             File[] children = cacheDir.listFiles();
-            long lastModifiedThreashold = System.currentTimeMillis() - expirationPeriod;
+            long lastModifiedThreshold = System.currentTimeMillis() - expirationPeriod;
             for (File f : children) {
-                if (f.lastModified() < lastModifiedThreashold) {
+                if (f.lastModified() < lastModifiedThreshold) {
                     f.delete();
                 }
             }

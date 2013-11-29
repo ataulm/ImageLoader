@@ -26,19 +26,26 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 /**
- * This is a basic implementation for the file manager.
- * On Startup it is running a cleanup of all the files in the cache, and removing
- * old images based on the expirationPeriod.
+ * Handles the storage of cached files on disk.
+ *
+ * A basic implementation of {@link FileManager}.
  */
 public class BasicFileManager implements FileManager {
 
-    private LoaderSettings loaderSettings;
+    private static final String NAME_SIZE_SEPARATOR = "-";
+    private static final String WIDTH_HEIGHT_SEPARATOR = "x";
+    private final FileManagerSettings settings;
 
+    public BasicFileManager(FileManagerSettings settings) {
+        this.settings = settings;
+    }
+
+    /**
+     * @param settings
+     * @deprecated in 1.6.2, use {@link #BasicFileManager(FileManagerSettings)}
+     */
     public BasicFileManager(LoaderSettings settings) {
-        this.loaderSettings = settings;
-        if (settings.isCleanOnSetup()) {
-            cleanOldFiles();
-        }
+        this.settings = new FileManagerSettings(settings.getCacheDir(), settings.shouldIncludeQueryInHash(), settings.getExpirationPeriod());
     }
 
     /**
@@ -46,34 +53,33 @@ public class BasicFileManager implements FileManager {
      */
     @Override
     public void clean() {
-        deleteOldFiles(-1);
+        deleteOldFiles(0);
     }
 
     /**
-     * CleanOldFile is removing all the files in the cache directory where the
-     * timestamp is older then the expiration time.
+     * Removes all the files in the cache directory on storage where the timestamp is older then the expiration time.
      */
     @Override
     public void cleanOldFiles() {
-        deleteOldFiles(loaderSettings.getExpirationPeriod());
+        deleteOldFiles(settings.expirationPeriodInMillis);
     }
 
     @Override
     public String getFilePath(String imageUrl) {
-        File f = getFile(imageUrl);
-        if (f.exists()) {
-            return f.getAbsolutePath();
+        File file = getFile(imageUrl);
+        if (file.exists()) {
+            return file.getAbsolutePath();
         }
         return null;
     }
 
     @Override
-    public void saveBitmap(String fileName, Bitmap b, int width, int height) {
+    public void saveBitmap(String fileName, Bitmap bitmap, int width, int height) {
         try {
-            FileOutputStream out = new FileOutputStream(fileName + "-" + width + "x" + height);
-            b.compress(Bitmap.CompressFormat.PNG, 90, out);
+            FileOutputStream out = new FileOutputStream(fileName + NAME_SIZE_SEPARATOR + width + WIDTH_HEIGHT_SEPARATOR + height);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out);
         } catch (Exception e) {
-            Log.warning("" + e.getMessage());
+            Log.warning(e.getMessage());
         }
     }
 
@@ -81,32 +87,31 @@ public class BasicFileManager implements FileManager {
     public File getFile(String url) {
         url = processUrl(url);
         String filename = String.valueOf(url.hashCode());
-        return new File(loaderSettings.getCacheDir(), filename);
+        return new File(settings.cacheDirectory, filename);
     }
 
     @Override
     public File getFile(String url, int width, int height) {
         url = processUrl(url);
-        String filename = url.hashCode() + "-" + width + "x" + height;
-        return new File(loaderSettings.getCacheDir(), filename);
+        String filename = url.hashCode() + NAME_SIZE_SEPARATOR + width + WIDTH_HEIGHT_SEPARATOR + height;
+        return new File(settings.cacheDirectory, filename);
     }
 
     private String processUrl(String url) {
-        if (loaderSettings.isQueryIncludedInHash()) {
+        if (settings.includeQueryInHash) {
             return url;
         }
-        return new UrlUtil().removeQuery(url);
+        return UrlUtil.removeQuery(url);
     }
 
     private void deleteOldFiles(final long expirationPeriod) {
-        final String cacheDir = loaderSettings.getCacheDir().getAbsolutePath();
+        final String pathToCacheDir = settings.cacheDirectory.getAbsolutePath();
         Thread cleaner = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    new FileUtil().reduceFileCache(cacheDir, expirationPeriod);
-                } catch (Throwable t) {
-                    // Don't have to fail in case there
+                    new FileUtil().reduceFileCache(pathToCacheDir, expirationPeriod);
+                } catch (Throwable ignore) {
                 }
             }
         });
@@ -114,4 +119,15 @@ public class BasicFileManager implements FileManager {
         cleaner.start();
     }
 
+    public static class FileManagerSettings {
+        private final File cacheDirectory;
+        private final boolean includeQueryInHash;
+        private final long expirationPeriodInMillis;
+
+        public FileManagerSettings(File cacheDirectory, boolean includeQueryInHash, long expirationPeriodInMillis) {
+            this.cacheDirectory = cacheDirectory;
+            this.includeQueryInHash = includeQueryInHash;
+            this.expirationPeriodInMillis = expirationPeriodInMillis;
+        }
+    }
 }

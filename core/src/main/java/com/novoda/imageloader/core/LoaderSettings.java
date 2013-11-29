@@ -74,7 +74,7 @@ public class LoaderSettings {
     private boolean shouldIncludeQueryInHash;
     private boolean shouldCleanExpiredItemsInCacheOnSetup;
     private boolean shouldDisconnectOnEveryCall;
-    private boolean shouldUseAsyncTasks;
+    private boolean shouldLoadConcurrently;
     private boolean shouldAllowUpsampling;
     private boolean shouldAlwaysUseOriginalSize;
 
@@ -89,7 +89,7 @@ public class LoaderSettings {
         this.shouldIncludeQueryInHash = DEFAULT_INCLUDE_QUERY_IN_HASH;
         this.shouldCleanExpiredItemsInCacheOnSetup = DEFAULT_CLEAN_ON_SETUP;
         shouldDisconnectOnEveryCall = DEFAULT_DISCONNECT_ON_EVERY_CALL;
-        shouldUseAsyncTasks = DEFAULT_USE_ASYNC_TASKS;
+        shouldLoadConcurrently = DEFAULT_USE_ASYNC_TASKS;
         shouldAllowUpsampling = DEFAULT_ALLOW_UPSAMPLING;
         shouldAlwaysUseOriginalSize = DEFAULT_ALWAYS_USE_ORIGINAL_SIZE;
     }
@@ -118,7 +118,7 @@ public class LoaderSettings {
         this.shouldIncludeQueryInHash = shouldIncludeQueryInHash;
         this.shouldCleanExpiredItemsInCacheOnSetup = shouldCleanExpiredItemsInCacheOnSetup;
         this.shouldDisconnectOnEveryCall = shouldDisconnectOnEveryCall;
-        this.shouldUseAsyncTasks = shouldUseAsyncTasks;
+        this.shouldLoadConcurrently = shouldUseAsyncTasks;
         this.shouldAllowUpsampling = shouldAllowUpsampling;
         this.shouldAlwaysUseOriginalSize = shouldAlwaysUseOriginalSize;
     }
@@ -171,46 +171,27 @@ public class LoaderSettings {
         return Collections.unmodifiableMap(headers);
     }
 
-    public boolean getDisconnectOnEveryCall() {
+    public boolean shouldDisconnectOnEveryCall() {
         return shouldDisconnectOnEveryCall;
     }
 
-    /**
-     * Returns Build.VERSION.SDK_INT.
-     * <p/>
-     * Used so it can be mocked and allows testing against API-specific behaviours.
-     *
-     * @return sdkVersion
-     */
-    public int getSdkVersion() {
-        return Build.VERSION.SDK_INT;
-    }
-
     public CacheManager getCacheManager() {
-        if (cacheManager == null) {
-            cacheManager = new SoftMapCache();
-        }
+        initCacheManager();
         return cacheManager;
     }
 
     public CacheManager getResCacheManager() {
-        if (resourceCacheManager == null) {
-            resourceCacheManager = new SoftMapCache();
-        }
+        initResourceCacheManager();
         return resourceCacheManager;
     }
 
     public NetworkManager getNetworkManager() {
-        if (networkManager == null) {
-            networkManager = new UrlNetworkManager(this);
-        }
+        initNetworkmanager();
         return networkManager;
     }
 
     public FileManager getFileManager() {
-        if (fileManager == null) {
-            fileManager = new BasicFileManager(this);
-        }
+        initFileManager();
         return fileManager;
     }
 
@@ -218,17 +199,17 @@ public class LoaderSettings {
      * Specifies whether the LoaderSettings is configured to use asynchronous tasks.
      * <p/>
      * Defaults to true, and can be turned off using
-     * {@link com.novoda.imageloader.core.LoaderSettings.Builder#doNotUseAsyncTasks()}
+     * {@link com.novoda.imageloader.core.LoaderSettings.Builder#doNotLoadConcurrently()}
      *
-     * @return shouldUseAsyncTasks the flag indicating whether or not to use asynchronous tasks
+     * @return shouldLoadConcurrently the flag indicating whether or not to use asynchronous tasks
      */
-    public boolean shouldUseAsyncTasks() {
-        return shouldUseAsyncTasks;
+    public boolean shouldLoadConcurrently() {
+        return shouldLoadConcurrently;
     }
 
     public Loader getLoader() {
         if (loader == null) {
-            if (shouldUseAsyncTasks()) {
+            if (shouldLoadConcurrently()) {
                 this.loader = new ConcurrentLoader(this);
             } else {
                 this.loader = new SimpleLoader(this);
@@ -263,6 +244,54 @@ public class LoaderSettings {
     }
 
     /**
+     * TODO: when LoaderSettings.SettingsBuilder is fully removed, this can be removed, as well as the call in
+     * {@link #getResCacheManager()}
+     */
+    private void initResourceCacheManager() {
+        if (resourceCacheManager == null) {
+            resourceCacheManager = new SoftMapCache();
+        }
+    }
+
+    /**
+     * TODO: when LoaderSettings.SettingsBuilder is fully removed, this can be removed, as well as the call in
+     * {@link #getCacheManager()}
+     */
+    private void initCacheManager() {
+        if (cacheManager == null) {
+            cacheManager = new SoftMapCache();
+        }
+    }
+
+    /**
+     * TODO: when LoaderSettings.SettingsBuilder is fully removed, this can be removed, as well as the call in
+     * {@link #getFileManager()}
+     */
+    private void initFileManager() {
+        if (fileManager == null) {
+            BasicFileManager.FileManagerSettings fileManagerSettings = new BasicFileManager.FileManagerSettings(
+                    cacheDir, shouldIncludeQueryInHash, expirationPeriodInMillis);
+            fileManager = new BasicFileManager(fileManagerSettings);
+        }
+
+        if (shouldCleanExpiredItemsInCacheOnSetup) {
+            fileManager.cleanOldFiles();
+        }
+    }
+
+    /**
+     * TODO: when LoaderSettings.SettingsBuilder is fully removed, this can be removed, as well as the call in
+     * {@link #getNetworkManager()}
+     */
+    private void initNetworkmanager() {
+        if (networkManager == null) {
+            UrlNetworkManager.NetworkManagerSettings networkManagerSettings = new UrlNetworkManager.NetworkManagerSettings(
+                    new FileUtil(), headers, connectionTimeout, readTimeout, shouldDisconnectOnEveryCall);
+            networkManager = new UrlNetworkManager(networkManagerSettings);
+        }
+    }
+
+    /**
      * @param allowUpsampling
      * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
      * modify the LoaderSettings object after creation - use the Builder instead.
@@ -283,6 +312,19 @@ public class LoaderSettings {
     }
 
     /**
+     * Returns Build.VERSION.SDK_INT.
+     * <p/>
+     * Used so it can be mocked and allows testing against API-specific behaviours.
+     *
+     * @return sdkVersion
+     * @deprecated in 1.6.2. Was used previously for internal testing only - now ImageLoader in min sdk 8 so unneeded.
+     */
+    @Deprecated
+    public int getSdkVersion() {
+        return Build.VERSION.SDK_INT;
+    }
+
+    /**
      * @param fileManager
      * @see Builder#withFileManager(com.novoda.imageloader.core.file.FileManager)
      * @deprecated in 1.6.2. This method will be removed in a later version of ImageLoader; it should not be possible to
@@ -294,11 +336,11 @@ public class LoaderSettings {
     }
 
     /**
-     * @deprecated in 1.6.2. Use {@link LoaderSettings#shouldUseAsyncTasks} instead.
+     * @deprecated in 1.6.2. Use {@link LoaderSettings#shouldLoadConcurrently} instead.
      */
     @Deprecated
     public boolean isUseAsyncTasks() {
-        return shouldUseAsyncTasks();
+        return shouldLoadConcurrently();
     }
 
     /**
@@ -324,7 +366,7 @@ public class LoaderSettings {
      */
     @Deprecated
     public void setUseAsyncTasks(boolean useAsyncTasks) {
-        this.shouldUseAsyncTasks = useAsyncTasks;
+        this.shouldLoadConcurrently = useAsyncTasks;
     }
 
     /**
@@ -626,7 +668,7 @@ public class LoaderSettings {
         private boolean shouldIncludeQueryInHash;
         private boolean shouldDisconnectOnEveryCall;
         private boolean shouldCleanExpiredItemsInCacheOnSetup;
-        private boolean shouldUseAsyncTasks;
+        private boolean shouldLoadConcurrently;
         private boolean shouldAllowUpsampling;
         private boolean shouldAlwaysUseOriginalSize;
 
@@ -640,7 +682,7 @@ public class LoaderSettings {
             readTimeout = DEFAULT_READ_TIMEOUT;
             shouldCleanExpiredItemsInCacheOnSetup = DEFAULT_CLEAN_ON_SETUP;
             shouldDisconnectOnEveryCall = DEFAULT_DISCONNECT_ON_EVERY_CALL;
-            shouldUseAsyncTasks = DEFAULT_USE_ASYNC_TASKS;
+            shouldLoadConcurrently = DEFAULT_USE_ASYNC_TASKS;
             shouldAllowUpsampling = DEFAULT_ALLOW_UPSAMPLING;
             shouldAlwaysUseOriginalSize = DEFAULT_ALWAYS_USE_ORIGINAL_SIZE;
         }
@@ -718,10 +760,10 @@ public class LoaderSettings {
 
         /**
          * @return this LoaderSettings.Builder
-         * @see com.novoda.imageloader.core.LoaderSettings#shouldUseAsyncTasks()
+         * @see com.novoda.imageloader.core.LoaderSettings#shouldLoadConcurrently()
          */
-        public Builder doNotUseAsyncTasks() {
-            shouldUseAsyncTasks = false;
+        public Builder doNotLoadConcurrently() {
+            shouldLoadConcurrently = false;
             return this;
         }
 
@@ -774,13 +816,28 @@ public class LoaderSettings {
             }
 
             setupFileManager();
+            setupNetworkmanager();
+            setupCacheManager();
+            setupResourceCacheManager();
 
             settings = new LoaderSettings(bitmapUtil, headers, cacheManager, resourceCacheManager, fileManager,
                     networkManager, loader, cacheDir, readTimeout, connectionTimeout, expirationPeriodInMillis,
                     shouldIncludeQueryInHash, shouldCleanExpiredItemsInCacheOnSetup, shouldDisconnectOnEveryCall,
-                    shouldUseAsyncTasks, shouldAllowUpsampling, shouldAlwaysUseOriginalSize);
+                    shouldLoadConcurrently, shouldAllowUpsampling, shouldAlwaysUseOriginalSize);
 
             return settings;
+        }
+
+        private void setupResourceCacheManager() {
+            if (resourceCacheManager == null) {
+                resourceCacheManager = new SoftMapCache();
+            }
+        }
+
+        private void setupCacheManager() {
+            if (cacheManager == null) {
+                cacheManager = new SoftMapCache();
+            }
         }
 
         private void setupFileManager() {
@@ -792,6 +849,14 @@ public class LoaderSettings {
 
             if (shouldCleanExpiredItemsInCacheOnSetup) {
                 fileManager.cleanOldFiles();
+            }
+        }
+
+        private void setupNetworkmanager() {
+            if (networkManager == null) {
+                UrlNetworkManager.NetworkManagerSettings networkManagerSettings = new UrlNetworkManager.NetworkManagerSettings(
+                        new FileUtil(), headers, connectionTimeout, readTimeout, shouldDisconnectOnEveryCall);
+                networkManager = new UrlNetworkManager(networkManagerSettings);
             }
         }
     }

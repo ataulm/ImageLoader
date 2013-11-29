@@ -48,8 +48,12 @@ public class UrlNetworkManagerTest extends FileTestCase {
     public void beforeEachTest() throws IOException {
         loaderSettings = mock(LoaderSettings.class);
         fileUtil = mock(FileUtil.class);
-        when(loaderSettings.getSdkVersion()).thenReturn(8);
         httpURLConnection = mock(HttpURLConnection.class);
+
+        UrlNetworkManager.NetworkManagerSettings networkManagerSettings = new UrlNetworkManager.NetworkManagerSettings(
+                fileUtil, loaderSettings.getHeaders(), loaderSettings.getConnectionTimeout(),
+                loaderSettings.getReadTimeout(), loaderSettings.shouldDisconnectOnEveryCall());
+
         urlNetworkManager = new UrlNetworkManager(loaderSettings, fileUtil) {
             @Override
             protected HttpURLConnection openConnection(String url) throws IOException, MalformedURLException {
@@ -88,8 +92,23 @@ public class UrlNetworkManagerTest extends FileTestCase {
 
     @Test
     public void shouldCallDisconnectIfDefinedInSettings() {
-        when(loaderSettings.getDisconnectOnEveryCall()).thenReturn(true);
-        urlNetworkManager.retrieveImage("http://king.com", imageFile);
+        when(loaderSettings.shouldDisconnectOnEveryCall()).thenReturn(true);
+        UrlNetworkManager.NetworkManagerSettings networkManagerSettings = new UrlNetworkManager.NetworkManagerSettings(
+                fileUtil,
+                loaderSettings.getHeaders(),
+                loaderSettings.getConnectionTimeout(),
+                loaderSettings.getReadTimeout(),
+                loaderSettings.shouldDisconnectOnEveryCall());
+        NetworkManager manager = new UrlNetworkManager(networkManagerSettings) {
+            @Override
+            protected HttpURLConnection openConnection(String url) throws IOException {
+                lastUrl = url;
+                return httpURLConnection;
+            }
+        };
+
+        manager.retrieveImage("http://king.com", imageFile);
+
         verify(httpURLConnection).disconnect();
     }
 
@@ -104,16 +123,6 @@ public class UrlNetworkManagerTest extends FileTestCase {
         when(httpURLConnection.getInputStream()).thenThrow(new IOException());
         urlNetworkManager.retrieveImage("http://king.com", imageFile);
         verify(httpURLConnection, never()).disconnect();
-    }
-
-    @Test
-    public void shouldSetKeepAliveSystemPropertyForApiLevelOlderThan8() {
-        System.setProperty("http.keepAlive", "true");
-        assertEquals("true", System.getProperty("http.keepAlive"));
-        when(loaderSettings.getSdkVersion()).thenReturn(4);
-
-        urlNetworkManager.retrieveImage("http://king.com", imageFile);
-        assertEquals("false", System.getProperty("http.keepAlive"));
     }
 
     @Test

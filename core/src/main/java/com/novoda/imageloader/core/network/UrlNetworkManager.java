@@ -25,23 +25,35 @@ import java.net.URL;
 import java.util.Map;
 
 /**
- * Basic implementation of the NetworkManager using URL connection.
+ * Basic implementation of the {@link NetworkManager} using URL connection.
  */
 public class UrlNetworkManager implements NetworkManager {
 
+    private static final String CONNECTION_HEADER_FIELD = "Location";
     private static final int TEMP_REDIRECT = 307;
+    private static final int MAX_REDIRECTS = 3;
 
-    private FileUtil fileUtil;
-    private LoaderSettings settings;
+    private final NetworkManagerSettings settings;
+
     private int manualRedirects;
 
+    public UrlNetworkManager(NetworkManagerSettings settings) {
+        this.settings = settings;
+    }
+
+    /**
+     * @deprecated in 1.6.2. Use {@link #UrlNetworkManager(NetworkManagerSettings)}
+     */
     public UrlNetworkManager(LoaderSettings settings) {
         this(settings, new FileUtil());
     }
 
+    /**
+     * @deprecated in 1.6.2. Use {@link #UrlNetworkManager(NetworkManagerSettings)}
+     */
     public UrlNetworkManager(LoaderSettings settings, FileUtil fileUtil) {
-        this.settings = settings;
-        this.fileUtil = fileUtil;
+        this.settings = new NetworkManagerSettings(fileUtil, settings.getHeaders(), settings.getConnectionTimeout(),
+                settings.getReadTimeout(), settings.shouldDisconnectOnEveryCall());
     }
 
     @Override
@@ -49,11 +61,10 @@ public class UrlNetworkManager implements NetworkManager {
         InputStream is = null;
         OutputStream os = null;
         HttpURLConnection conn = null;
-        applyChangeonSdkVersion(settings.getSdkVersion());
         try {
             conn = openConnection(url);
-            conn.setConnectTimeout(settings.getConnectionTimeout());
-            conn.setReadTimeout(settings.getReadTimeout());
+            conn.setConnectTimeout(settings.connectionTimeout);
+            conn.setReadTimeout(settings.readTimeout);
 
             handleHeaders(conn);
 
@@ -62,23 +73,23 @@ public class UrlNetworkManager implements NetworkManager {
             } else {
                 is = conn.getInputStream();
                 os = new FileOutputStream(f);
-                fileUtil.copyStream(is, os);
+                settings.fileUtil.copyStream(is, os);
             }
         } catch (FileNotFoundException fnfe) {
             throw new ImageNotFoundException();
         } catch (Throwable ex) {
             ex.printStackTrace();
         } finally {
-            if (conn != null && settings.getDisconnectOnEveryCall()) {
+            if (conn != null && settings.shouldDisconnectOnEveryCall) {
                 conn.disconnect();
             }
-            fileUtil.closeSilently(is);
-            fileUtil.closeSilently(os);
+            settings.fileUtil.closeSilently(is);
+            settings.fileUtil.closeSilently(os);
         }
     }
 
     private void handleHeaders(HttpURLConnection conn) {
-        Map<String, String> headers = settings.getHeaders();
+        Map<String, String> headers = settings.headers;
         if (headers != null) {
             for (String key : headers.keySet()) {
                 conn.setRequestProperty(key, headers.get(key));
@@ -88,8 +99,8 @@ public class UrlNetworkManager implements NetworkManager {
 
     public void redirectManually(File f, HttpURLConnection conn) {
         manualRedirects++;
-        if (manualRedirects <= 3) {
-            retrieveImage(conn.getHeaderField("Location"), f);
+        if (manualRedirects <= MAX_REDIRECTS) {
+            retrieveImage(conn.getHeaderField(CONNECTION_HEADER_FIELD), f);
         } else {
             manualRedirects = 0;
         }
@@ -100,8 +111,8 @@ public class UrlNetworkManager implements NetworkManager {
         HttpURLConnection conn = null;
         try {
             conn = openConnection(url);
-            conn.setConnectTimeout(settings.getConnectionTimeout());
-            conn.setReadTimeout(settings.getReadTimeout());
+            conn.setConnectTimeout(settings.connectionTimeout);
+            conn.setReadTimeout(settings.readTimeout);
             return conn.getInputStream();
         } catch (FileNotFoundException fnfe) {
             throw new ImageNotFoundException();
@@ -114,10 +125,19 @@ public class UrlNetworkManager implements NetworkManager {
         return (HttpURLConnection) new URL(url).openConnection();
     }
 
-    private void applyChangeonSdkVersion(int sdkVersion) {
-        if (sdkVersion < 8) {
-            System.setProperty("http.keepAlive", "false");
+    public static class NetworkManagerSettings {
+        private final FileUtil fileUtil;
+        private final int connectionTimeout;
+        private final int readTimeout;
+        private final boolean shouldDisconnectOnEveryCall;
+        private final Map<String, String> headers;
+
+        public NetworkManagerSettings(FileUtil fileUtil, Map<String, String> headers, int connectionTimeout, int readTimeout, boolean shouldDisconnectOnEveryCall) {
+            this.fileUtil = fileUtil;
+            this.headers = headers;
+            this.connectionTimeout = connectionTimeout;
+            this.readTimeout = readTimeout;
+            this.shouldDisconnectOnEveryCall = shouldDisconnectOnEveryCall;
         }
     }
-
 }

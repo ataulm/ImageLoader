@@ -20,7 +20,7 @@ import android.graphics.Bitmap;
 /**
  * Interface for all the in memory cache managers.
  * There are three main type of memory cache managers :
- * NoChace, SoftMapCache, and LruBitmapCache
+ * NoCache, SoftMapCache, and LruBitmapCache
  */
 public interface CacheManager {
 

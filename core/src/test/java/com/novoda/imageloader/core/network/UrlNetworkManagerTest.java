@@ -145,7 +145,7 @@ public class UrlNetworkManagerTest extends FileTestCase {
                     redirect = false;
                     return UrlNetworkManager_TEMP_REDIRECT;
                 }
-                return 200;
+                return HttpURLConnection.HTTP_OK;
             }
         });
         InputStream expected = mock(InputStream.class);
